@@ -1,7 +1,10 @@
 package dagger
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"log"
 	"path"
 	"sort"
 	"strings"
@@ -44,6 +47,52 @@ func Input(r Requirer) inputDispatcher {
 	return inputDispatcher{r: r}
 }
 
+func (d inputDispatcher) Scanner() (*bufio.Scanner, error) {
+	for _, v := range d.r.Requires() {
+		output := v.Output()
+		switch o := output.(type) {
+		case LocalTarget:
+			file, err := o.Open()
+			if err != nil {
+				return nil, err
+			}
+			return bufio.NewScanner(file), nil
+		}
+	}
+	return nil, nil
+}
+
+func (d inputDispatcher) ReadLines() (<-chan string, error) {
+	ch := make(chan string)
+	for _, v := range d.r.Requires() {
+		output := v.Output()
+		switch o := output.(type) {
+		case LocalTarget:
+			file, err := o.Open()
+			if err != nil {
+				return nil, err
+			}
+			go func() {
+				reader := bufio.NewReader(file)
+				for {
+					line, err := reader.ReadString('\n')
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						log.Fatal(err)
+					}
+					ch <- strings.TrimSpace(line)
+				}
+				close(ch)
+			}()
+		default:
+			close(ch)
+		}
+	}
+	return ch, nil
+}
+
 // AutoPath returns a path based on the task name and parameters.
 func AutoPath(outp Outputter) string {
 	return AutoPathExt(outp, "tsv")
@@ -63,7 +112,15 @@ func AutoPathExt(outp Outputter, ext string) string {
 	var parts []string
 	for _, k := range keys {
 		parts = append(parts, k)
-		parts = append(parts, fmt.Sprintf("%s", m[k]))
+		value := m[k]
+		switch v := value.(type) {
+		case string:
+			parts = append(parts, v)
+		case fmt.Stringer:
+			parts = append(parts, v.String())
+		default:
+			parts = append(parts, fmt.Sprintf("%v", m[k]))
+		}
 	}
 	filename := strings.Join(parts, "-") + "." + ext
 	return path.Join(directory, filename)
