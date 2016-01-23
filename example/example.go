@@ -10,10 +10,12 @@ import (
 	"github.com/gophergala2016/dagger"
 )
 
+// GithubUser downloads the user info.
 type GithubUser struct {
 	Username string
 }
 
+// Run downloads the information.
 func (task GithubUser) Run() error {
 	resp, err := http.Get(fmt.Sprintf("https://api.github.com/users/%s", task.Username))
 	if err != nil {
@@ -27,6 +29,7 @@ func (task GithubUser) Run() error {
 	return ioutil2.WriteFileAtomic(task.Output().Path, b, 0644)
 }
 
+// Output to a file.
 func (task GithubUser) Output() dagger.LocalTarget {
 	return dagger.LocalTarget{Path: fmt.Sprintf("./GithubUser-%s.json", task.Username)}
 }
