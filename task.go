@@ -10,24 +10,20 @@ type Outputter interface {
 	Output() Target
 }
 
+// Completer is another way for a task to specify, whether it is complete or not.
+type Completer interface {
+	Complete() bool
+}
+
 // Runner is something to be executed. Business logic goes here.
 type Runner interface {
 	Run() error
 }
 
-// Dependency is implemented by tasks, which require only a single other task.
-type Dependency interface {
-	Requires() Outputter
-}
-
-// DependencyList is implemented by tasks, which require a list of things to be done.
-type DependencyList interface {
-	Requires() []Outputter
-}
-
-// DependencyMap is implemented by tasks, which require a map of tasks to be done.
-type DependencyMap interface {
-	Requires() map[string]Outputter
+// Dependency is implemented by tasks, which require one or more things to be
+// done, before they can run.
+type Requirer interface {
+	Requires() interface{}
 }
 
 // Task is simply something that produces an output and knows, how to

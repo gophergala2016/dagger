@@ -2,6 +2,14 @@ package dagger
 
 import "os"
 
+type BooleanTarget struct {
+	Value bool
+}
+
+func (t BooleanTarget) Exists() bool {
+	return t.Value
+}
+
 // LocalTarget represents a file on the file system.
 type LocalTarget struct {
 	Path string
