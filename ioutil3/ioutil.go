@@ -22,11 +22,14 @@ func WriteTabsDelimiter(w io.Writer, delim rune, record ...string) error {
 	return wr.Error()
 }
 
-func WriteJSON(w io.Writer, o interface{}) error {
-	b, err := json.Marshal(o)
+func WriteJSON(w io.Writer, val interface{}) error {
+	b, err := json.Marshal(val)
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(b)
+	if _, err = w.Write(b); err != nil {
+		return err
+	}
+	_, err = w.Write([]byte("\n"))
 	return err
 }

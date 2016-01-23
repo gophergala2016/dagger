@@ -80,7 +80,8 @@ func (task GithubRepos) Run() error {
 			err   error
 		)
 		operation := func() error {
-			repos, resp, err = client.Repositories.ListByOrg(task.Username, nil)
+			repos, resp, err = client.Repositories.ListByOrg(task.Username, opt)
+			log.Println(err)
 			if err != nil {
 				return err
 			}
@@ -101,7 +102,12 @@ func (task GithubRepos) Run() error {
 		return err
 	}
 	defer file.Close()
-	return ioutil3.WriteJSON(file, allRepos)
+	for _, repo := range allRepos {
+		if err := ioutil3.WriteJSON(file, repo); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // output for internal user.
