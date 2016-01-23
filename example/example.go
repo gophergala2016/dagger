@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 
 	"code.google.com/p/vitess/go/ioutil2"
 	"github.com/gophergala2016/dagger"
+	"github.com/gophergala2016/dagger/ioutil3"
 )
 
 // Executable is a thin task, making sure required programs are installed.
@@ -70,7 +70,7 @@ func (task GithubRepos) Run() error {
 		return err
 	}
 	defer file.Close()
-	if _, err := io.WriteString(file, "Hello World\n"); err != nil {
+	if _, err := ioutil3.WriteTabs(file, []interface{}{"Hello", "World", 1, 2}); err != nil {
 		return err
 	}
 	return nil

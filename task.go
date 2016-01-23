@@ -21,3 +21,7 @@ type Runner interface {
 type Requires interface {
 	Requires() TaskMap
 }
+
+// TaskMap expressed the dependencies of a task. It should be easy to create
+// and should provide many helper methods.
+type TaskMap map[string]Outputter
