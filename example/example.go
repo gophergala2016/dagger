@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -64,7 +65,14 @@ func (task GithubRepos) Requires() dagger.TaskMap {
 }
 
 func (task GithubRepos) Run() error {
-	log.Println(task.Requires())
+	file, err := task.output().Create()
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if _, err := io.WriteString(file, "Hello World\n"); err != nil {
+		return err
+	}
 	return nil
 }
 

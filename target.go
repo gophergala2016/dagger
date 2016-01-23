@@ -1,6 +1,10 @@
 package dagger
 
-import "os"
+import (
+	"os"
+
+	"github.com/facebookgo/atomicfile"
+)
 
 type BooleanTarget struct {
 	Value bool
@@ -21,4 +25,8 @@ func (t LocalTarget) Exists() bool {
 		return false
 	}
 	return true
+}
+
+func (t LocalTarget) Create() (*atomicfile.File, error) {
+	return atomicfile.New(t.Path, 0644)
 }
