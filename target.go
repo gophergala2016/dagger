@@ -30,3 +30,7 @@ func (t LocalTarget) Exists() bool {
 func (t LocalTarget) Create() (*atomicfile.File, error) {
 	return atomicfile.New(t.Path, 0644)
 }
+
+func (t LocalTarget) Open() (*os.File, error) {
+	return os.Open(t.Path)
+}
