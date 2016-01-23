@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gophergala2016/dagger"
+	"github.com/kr/pretty"
 )
 
 // BogusData creates some bogus data.
@@ -55,7 +56,8 @@ type BogusAggregation struct {
 
 func (task BogusAggregation) Requires() dagger.TaskMap {
 	return dagger.TaskMap{
-		"data": BogusData{Length: 1000, Cols: task.Col + 1},
+		"data":  BogusData{Length: 1000, Cols: task.Col + 1},
+		"train": BogusData{Length: 100, Cols: task.Col + 1},
 	}
 }
 
@@ -92,30 +94,63 @@ func (task BogusAggregation) Output() dagger.Target {
 	return task.output()
 }
 
+type Dummy struct{}
+
+func (task Dummy) Requires() dagger.TaskMap {
+	return dagger.TaskMap{
+		"x": BogusData{Length: 333, Cols: 10},
+		"y": BogusAggregation{Col: 999},
+	}
+}
+
+func (task Dummy) Run() error {
+	return nil
+}
+
+func (task Dummy) Output() dagger.Target {
+	return dagger.LocalTarget{Path: dagger.AutoPath(task)}
+}
+
 func main() {
 
-	task := BogusAggregation{Col: 2}
+	// task := BogusAggregation{Col: 2}
+	task := Dummy{}
 
-	for _, v := range task.Requires() {
-		output := v.Output()
-		if !output.Exists() {
-			switch tt := v.(type) {
-			case dagger.Runner:
-				if err := tt.Run(); err != nil {
+	prereqs := dagger.TaskDeps(task)
+	log.Printf("%# v", pretty.Formatter(prereqs))
+	for i, o := range dagger.TopoSort(prereqs) {
+		log.Printf("%d: %# v - %# v - %v", i, o, o.Output(), o.Output().Exists())
+		if !o.Output().Exists() {
+			log.Printf("running %# v...", o)
+			if rr, ok := o.(dagger.Runner); ok {
+				if err := rr.Run(); err != nil {
 					log.Fatal(err)
 				}
-			default:
-				log.Fatal("output does not exists and there is nothing to run")
+			} else {
+				log.Fatal("cannot create missing task output for: %# v", o)
 			}
-		} else {
-			log.Printf("dependency is done")
 		}
 	}
+	// for _, v := range task.Requires() {
+	// 	output := v.Output()
+	// 	if !output.Exists() {
+	// 		switch tt := v.(type) {
+	// 		case dagger.Runner:
+	// 			if err := tt.Run(); err != nil {
+	// 				log.Fatal(err)
+	// 			}
+	// 		default:
+	// 			log.Fatal("output does not exists and there is nothing to run")
+	// 		}
+	// 	} else {
+	// 		log.Printf("dependency is done")
+	// 	}
+	// }
 
-	if !task.Output().Exists() {
-		if err := task.Run(); err != nil {
-			log.Fatal(err)
-		}
-	}
-	log.Println("all done")
+	// if !task.Output().Exists() {
+	// 	if err := task.Run(); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
+	// log.Println("all done")
 }

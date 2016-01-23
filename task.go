@@ -122,6 +122,10 @@ func AutoPathExt(outp Outputter, ext string) string {
 			parts = append(parts, fmt.Sprintf("%v", m[k]))
 		}
 	}
-	filename := strings.Join(parts, "-") + "." + ext
+	fn := strings.Join(parts, "-")
+	if len(fn) == 0 {
+		fn = "output"
+	}
+	filename := fn + "." + ext
 	return path.Join(directory, filename)
 }
