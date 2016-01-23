@@ -98,7 +98,7 @@ type Dummy struct{}
 
 func (task Dummy) Requires() dagger.TaskMap {
 	return dagger.TaskMap{
-		"x": BogusData{Length: 333, Cols: 10},
+		"x": BogusData{Length: 133, Cols: 10},
 		"y": BogusAggregation{Col: 999},
 	}
 }
@@ -112,7 +112,6 @@ func (task Dummy) Output() dagger.Target {
 }
 
 func main() {
-
 	// task := BogusAggregation{Col: 2}
 	task := Dummy{}
 
@@ -123,6 +122,9 @@ func main() {
 		if !o.Output().Exists() {
 			log.Printf("running %# v...", o)
 			if rr, ok := o.(dagger.Runner); ok {
+				if err := dagger.InitializeRunner(&rr); err != nil {
+					log.Fatal(err)
+				}
 				if err := rr.Run(); err != nil {
 					log.Fatal(err)
 				}

@@ -1,5 +1,11 @@
 package dagger
 
+import (
+	"log"
+
+	"github.com/miku/structs"
+)
+
 func TaskDeps(r Outputter) map[Outputter][]Outputter {
 	var result = make(map[Outputter][]Outputter)
 	var queue = []Outputter{r}
@@ -37,4 +43,12 @@ func TopoSort(m map[Outputter][]Outputter) []Outputter {
 	}
 	visitAll(keys)
 	return order
+}
+
+func InitializeRunner(runner *Runner) error {
+	s := structs.New(*runner)
+	for _, f := range s.Fields() {
+		log.Println(f, f.Tag("default"))
+	}
+	return nil
 }
