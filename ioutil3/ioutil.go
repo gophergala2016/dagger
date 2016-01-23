@@ -1,21 +1,22 @@
 package ioutil3
 
 import (
-	"fmt"
+	"encoding/csv"
 	"io"
-	"strings"
 )
 
 // WriteTabs like io.WriteString, just for a list of values.
-func WriteTabs(w io.Writer, records []interface{}) (int, error) {
-	return WriteTabsDelimiter(w, records, "\t")
+func WriteTabs(w io.Writer, record []string) error {
+	return WriteTabsDelimiter(w, record, '\t')
 }
 
 // WriteTabs like io.WriteString, just for a list of values.
-func WriteTabsDelimiter(w io.Writer, records []interface{}, delim string) (int, error) {
-	var values = make([]string, len(records))
-	for i, r := range records {
-		values[i] = fmt.Sprintf("%v", r)
+func WriteTabsDelimiter(w io.Writer, record []string, delim rune) error {
+	wr := csv.NewWriter(w)
+	wr.Comma = delim
+	if err := wr.Write(record); err != nil {
+		return err
 	}
-	return io.WriteString(w, strings.Join(values, delim))
+	wr.Flush()
+	return wr.Error()
 }

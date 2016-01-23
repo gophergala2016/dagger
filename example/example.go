@@ -70,7 +70,7 @@ func (task GithubRepos) Run() error {
 		return err
 	}
 	defer file.Close()
-	if _, err := ioutil3.WriteTabs(file, []interface{}{"Hello", "World", 1, 2}); err != nil {
+	if err := ioutil3.WriteTabs(file, []string{"Hello", "World", "1", "2"}); err != nil {
 		return err
 	}
 	return nil
