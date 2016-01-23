@@ -2,6 +2,7 @@ package dagger
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/facebookgo/atomicfile"
 )
@@ -28,6 +29,12 @@ func (t LocalTarget) Exists() bool {
 }
 
 func (t LocalTarget) Create() (*atomicfile.File, error) {
+	dirname := filepath.Dir(t.Path)
+	if _, err := os.Stat(dirname); os.IsNotExist(err) {
+		if err := os.MkdirAll(dirname, 0755); err != nil {
+			return nil, err
+		}
+	}
 	return atomicfile.New(t.Path, 0644)
 }
 

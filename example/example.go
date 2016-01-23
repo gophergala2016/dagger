@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os/exec"
 
-	"code.google.com/p/vitess/go/ioutil2"
 	"github.com/cenkalti/backoff"
 	"github.com/google/go-github/github"
 	"github.com/gophergala2016/dagger"
@@ -41,12 +40,11 @@ func (task GithubUser) Run() error {
 	if err != nil {
 		return err
 	}
-	return ioutil2.WriteFileAtomic(task.output().Path, b, 0644)
+	return ioutil3.WriteFileAtomic(task.output().Path, b, 0644)
 }
 
 func (task GithubUser) output() dagger.LocalTarget {
-	// TODO(miku): add support for automatic nameing, like: dagger.Autolocated(task)
-	return dagger.LocalTarget{Path: fmt.Sprintf("GithubUser-%s.json", task.Username)}
+	return dagger.LocalTarget{Path: dagger.AutoPathExt(task, "json")}
 }
 
 // Output to a file, conformance to interface.
@@ -66,6 +64,7 @@ func (task GithubRepos) Requires() dagger.TaskMap {
 	}
 }
 
+// Run downloads all repos for a given username and save as line delimited JSON.
 func (task GithubRepos) Run() error {
 	client := github.NewClient(nil)
 	opt := &github.RepositoryListByOrgOptions{
@@ -112,7 +111,7 @@ func (task GithubRepos) Run() error {
 
 // output for internal user.
 func (task GithubRepos) output() dagger.LocalTarget {
-	return dagger.LocalTarget{Path: fmt.Sprintf("./GithubRepos-%s.json", task.Username)}
+	return dagger.LocalTarget{dagger.AutoPath(task)}
 }
 
 // Output to a file.
@@ -121,9 +120,13 @@ func (task GithubRepos) Output() dagger.Target {
 }
 
 func main() {
+	task := GithubUser{Username: "gophergala2016"}
 	// task := GithubRepos{Username: "gophergala2016"}
-	task := GithubRepos{Username: "gophergala2016"}
-	if err := task.Run(); err != nil {
-		log.Fatal(err)
+	if !task.Output().Exists() {
+		if err := task.Run(); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Println("all done")
 	}
 }

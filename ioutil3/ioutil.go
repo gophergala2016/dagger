@@ -4,7 +4,21 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"io"
+	"os"
+	"path/filepath"
+
+	"code.google.com/p/vitess/go/ioutil2"
 )
+
+func WriteFileAtomic(filename string, data []byte, perm os.FileMode) error {
+	dirname := filepath.Dir(filename)
+	if _, err := os.Stat(dirname); os.IsNotExist(err) {
+		if err := os.MkdirAll(dirname, 0755); err != nil {
+			return err
+		}
+	}
+	return ioutil2.WriteFileAtomic(filename, data, perm)
+}
 
 // WriteTabs like io.WriteString, just for a list of values.
 func WriteTabs(w io.Writer, record ...string) error {
