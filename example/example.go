@@ -11,10 +11,12 @@ import (
 	"github.com/gophergala2016/dagger"
 )
 
+// Executable is a thin task, making sure required programs are installed.
 type Executable struct {
 	Name string
 }
 
+// Output will exist, if the executable is in PATH.
 func (task Executable) Output() dagger.Target {
 	_, err := exec.LookPath(task.Name)
 	return dagger.BooleanTarget{Value: err == nil}
