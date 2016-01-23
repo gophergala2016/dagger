@@ -8,6 +8,8 @@ import (
 	"os/exec"
 
 	"code.google.com/p/vitess/go/ioutil2"
+	"github.com/cenkalti/backoff"
+	"github.com/google/go-github/github"
 	"github.com/gophergala2016/dagger"
 	"github.com/gophergala2016/dagger/ioutil3"
 )
@@ -65,17 +67,44 @@ func (task GithubRepos) Requires() dagger.TaskMap {
 }
 
 func (task GithubRepos) Run() error {
+	client := github.NewClient(nil)
+	opt := &github.RepositoryListByOrgOptions{
+		ListOptions: github.ListOptions{PerPage: 50},
+	}
+	var allRepos []github.Repository
+
+	for {
+		var (
+			repos []github.Repository
+			resp  *github.Response
+			err   error
+		)
+		operation := func() error {
+			repos, resp, err = client.Repositories.ListByOrg(task.Username, nil)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := backoff.Retry(operation, backoff.NewExponentialBackOff()); err != nil {
+			return err
+		}
+		allRepos = append(allRepos, repos...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.ListOptions.Page = resp.NextPage
+	}
+
 	file, err := task.output().Create()
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	if err := ioutil3.WriteTabs(file, []string{"Hello", "World", "1", "2"}); err != nil {
-		return err
-	}
-	return nil
+	return ioutil3.WriteJSON(file, allRepos)
 }
 
+// output for internal user.
 func (task GithubRepos) output() dagger.LocalTarget {
 	return dagger.LocalTarget{Path: fmt.Sprintf("./GithubRepos-%s.json", task.Username)}
 }
@@ -86,8 +115,8 @@ func (task GithubRepos) Output() dagger.Target {
 }
 
 func main() {
+	// task := GithubRepos{Username: "gophergala2016"}
 	task := GithubRepos{Username: "gophergala2016"}
-	log.Printf("%+v", task.Requires())
 	if err := task.Run(); err != nil {
 		log.Fatal(err)
 	}
