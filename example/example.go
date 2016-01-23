@@ -49,14 +49,15 @@ type GithubRepos struct {
 	Username string
 }
 
-func (task GithubRepos) Requires() interface{} {
-	return []interface{}{
-		GithubUser{Username: task.Username},
-		Executable{Name: "jq"},
+func (task GithubRepos) Input() dagger.TaskMap {
+	return dagger.TaskMap{
+		"user": GithubUser{Username: task.Username},
+		"jq":   Executable{Name: "jq"},
 	}
 }
 
 func (task GithubRepos) Run() error {
+	log.Println(task.Input().Path("user"))
 	return nil
 }
 
@@ -65,30 +66,10 @@ func (task GithubRepos) Output() dagger.LocalTarget {
 	return dagger.LocalTarget{Path: fmt.Sprintf("./GithubRepos-%s.json", task.Username)}
 }
 
-// makeDeps return the predecessors of a task.
-func makeDeps(task interface{}) (deps []dagger.Outputter) {
-	switch t := task.(type) {
-	case dagger.Requirer:
-		log.Printf("%+v, %T", t, t)
-	default:
-		log.Println("task has no requirements")
-	}
-	return
-}
-
 func main() {
 	task := GithubRepos{Username: "gophergala2016"}
-	dagger.Input(task)
-	// log.Println(makeDeps(task))
-	// jq := Executable{Name: "jq"}
-	// log.Println(jq.Output().Exists())
-
-	// task := GithubRepos{Username: "gophergala2016"}
-	// if !task.Output().Exists() {
-	// 	log.Printf("running task: %+v", task)
-	// 	if err := task.Run(); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
-	// log.Printf("target done: %s", task.Output().Path)
+	log.Printf("%+v", task.Input())
+	if err := task.Run(); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -1,36 +1,21 @@
 package dagger
 
-import "log"
+// TaskMap expressed the dependencies of a task. It should be easy to create
+// and should provide many helper methods.
+type TaskMap map[string]Outputter
 
-type input struct {
-	deps []interface{}
-}
-
-// Input returns a dispatch object for a given task, that
-// provides many helper methods for dealing with
-func Input(in interface{}) input {
-	switch t := in.(type) {
-	case Requirer:
-		reqs := t.Requires()
-		log.Printf("task implements Requirer: %+v, %T", reqs, reqs)
-		switch tt := reqs.(type) {
-		case Outputter:
-			log.Printf("task %v has a single dependency: %v", tt, reqs)
-		case []Outputter:
-			log.Println("list of outputters ...")
-			for i, v := range tt {
-				log.Printf("%d. %v, %T", i, v, v)
-			}
-		case []interface{}:
-			log.Println("list of interface ...")
-			for i, v := range tt {
-				log.Printf("%d. %v, %T", i, v, v)
-			}
-		default:
-			log.Printf("something else: %s", tt)
-		}
-	default:
-		log.Printf("all done: task %v has no requirements", in)
+// Path return the path to the output for a given key. If no key is found or
+// the outputter is not a LocalTarget, the empty string is returned.
+func (tm TaskMap) Path(key string) string {
+	task, ok := tm[key]
+	if !ok {
+		return ""
 	}
-	return input{}
+	output := task.Output()
+	switch o := output.(type) {
+	case LocalTarget:
+		return o.Path
+	default:
+		return ""
+	}
 }
