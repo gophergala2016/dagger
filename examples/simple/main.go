@@ -78,8 +78,8 @@ func (task BogusAggregation) Run() error {
 		return err
 	}
 	defer file.Close()
-	io.WriteString(file, fmt.Sprintf("%d\n", sum))
-	return nil
+	_, err = io.WriteString(file, fmt.Sprintf("%d\n", sum))
+	return err
 }
 
 // output points to a file.
