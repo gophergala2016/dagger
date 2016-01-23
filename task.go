@@ -15,9 +15,9 @@ type Runner interface {
 	Run() error
 }
 
-// Inputter is implemented by tasks which have requirements. The dependencies
+// Requires is implemented by tasks which have requirements. The dependencies
 // are passed as map as it is the most flexible: Single dependency, dependency
 // list or a map of dependencies.
-type Inputter interface {
-	Input() TaskMap
+type Requires interface {
+	Requires() TaskMap
 }

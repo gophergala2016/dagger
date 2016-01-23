@@ -38,12 +38,17 @@ func (task GithubUser) Run() error {
 	if err != nil {
 		return err
 	}
-	return ioutil2.WriteFileAtomic(task.Output().(dagger.LocalTarget).Path, b, 0644)
+	return ioutil2.WriteFileAtomic(task.output().Path, b, 0644)
 }
 
-// Output to a file.
+func (task GithubUser) output() dagger.LocalTarget {
+	// TODO(miku): add support for automatic nameing, like: dagger.Autolocated(task)
+	return dagger.LocalTarget{Path: fmt.Sprintf("GithubUser-%s.json", task.Username)}
+}
+
+// Output to a file, conformance to interface.
 func (task GithubUser) Output() dagger.Target {
-	return dagger.LocalTarget{Path: fmt.Sprintf("./GithubUser-%s.json", task.Username)}
+	return task.output()
 }
 
 // GithubRepos gets the list of repositories for a given user.
@@ -51,7 +56,7 @@ type GithubRepos struct {
 	Username string
 }
 
-func (task GithubRepos) Input() dagger.TaskMap {
+func (task GithubRepos) Requires() dagger.TaskMap {
 	return dagger.TaskMap{
 		"user": GithubUser{Username: task.Username},
 		"jq":   Executable{Name: "jq"},
@@ -59,18 +64,22 @@ func (task GithubRepos) Input() dagger.TaskMap {
 }
 
 func (task GithubRepos) Run() error {
-	log.Println(task.Input().Path("user"))
+	log.Println(task.Requires())
 	return nil
 }
 
-// Output to a file.
-func (task GithubRepos) Output() dagger.LocalTarget {
+func (task GithubRepos) output() dagger.LocalTarget {
 	return dagger.LocalTarget{Path: fmt.Sprintf("./GithubRepos-%s.json", task.Username)}
+}
+
+// Output to a file.
+func (task GithubRepos) Output() dagger.Target {
+	return task.output()
 }
 
 func main() {
 	task := GithubRepos{Username: "gophergala2016"}
-	log.Printf("%+v", task.Input())
+	log.Printf("%+v", task.Requires())
 	if err := task.Run(); err != nil {
 		log.Fatal(err)
 	}
