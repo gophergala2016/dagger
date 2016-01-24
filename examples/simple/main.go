@@ -93,7 +93,10 @@ func (task Dummy) Requires() dagger.TaskMap {
 }
 
 func (task Dummy) Run() error {
-	return nil
+	file := dagger.Output(task).MustCreateLocalTarget()
+	defer file.Close()
+	_, err := io.WriteString(file, "OK\n")
+	return err
 }
 
 func (task Dummy) Output() dagger.Target {

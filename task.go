@@ -57,6 +57,17 @@ func (o outputHelper) CreateLocalTarget() (*atomicfile.File, error) {
 	if output, ok := o.o.Output().(LocalTarget); ok {
 		return output.Create()
 	}
+	return nil, fmt.Errorf("output is not a LocalTarget")
+}
+
+func (o outputHelper) MustCreateLocalTarget() *atomicfile.File {
+	if output, ok := o.o.Output().(LocalTarget); ok {
+		file, err := output.Create()
+		if err != nil {
+			panic(err)
+		}
+		return file
+	}
 	panic("output is not a LocalTarget")
 }
 
