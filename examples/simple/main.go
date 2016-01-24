@@ -83,22 +83,31 @@ func (task BogusAggregation) Output() dagger.Target {
 	return dagger.LocalTarget{Path: dagger.AutoPathExt(task, "tsv")}
 }
 
-type Dummy struct{}
+type Dummy struct {
+	Length int `default:"133"`
+}
 
+// Requires returns some things this task requires.
 func (task Dummy) Requires() dagger.TaskMap {
 	return dagger.TaskMap{
-		"x": BogusData{Length: 133, Cols: 10},
+		"x": BogusData{Length: task.Length, Cols: 10},
 		"y": BogusAggregation{Col: 999},
 	}
 }
 
+// Run tries to be short.
 func (task Dummy) Run() error {
 	file := dagger.Output(task).MustCreateLocalTarget()
 	defer file.Close()
-	_, err := io.WriteString(file, "OK\n")
-	return err
+	for _, p := range dagger.Input(task).PathList() {
+		if _, err := io.WriteString(file, fmt.Sprintf("OK\t%s\n", p)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
+// Output.
 func (task Dummy) Output() dagger.Target {
 	return dagger.LocalTarget{Path: dagger.AutoPath(task)}
 }

@@ -71,17 +71,28 @@ func (o outputHelper) MustCreateLocalTarget() *atomicfile.File {
 	panic("output is not a LocalTarget")
 }
 
-// inputDispatcher provides shortcuts to let a task access its requirements.
-type inputDispatcher struct {
+// inputHelper provides shortcuts to let a task access its requirements.
+type inputHelper struct {
 	r Requirer
 }
 
-func Input(r Requirer) inputDispatcher {
-	return inputDispatcher{r: r}
+func Input(r Requirer) inputHelper {
+	return inputHelper{r: r}
 }
 
-func (d inputDispatcher) Scanner() (*bufio.Scanner, error) {
-	for _, v := range d.r.Requires() {
+func (ih inputHelper) PathList() (paths []string) {
+	for _, v := range ih.r.Requires() {
+		output := v.Output()
+		switch o := output.(type) {
+		case LocalTarget:
+			paths = append(paths, o.Path)
+		}
+	}
+	return
+}
+
+func (ih inputHelper) Scanner() (*bufio.Scanner, error) {
+	for _, v := range ih.r.Requires() {
 		output := v.Output()
 		switch o := output.(type) {
 		case LocalTarget:
