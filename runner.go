@@ -1,6 +1,7 @@
 package dagger
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/miku/structs"
@@ -45,10 +46,31 @@ func TopoSort(m map[Outputter][]Outputter) []Outputter {
 	return order
 }
 
-func InitializeRunner(runner *Runner) error {
+func InitializeTask(runner *Runner) error {
 	s := structs.New(*runner)
-	for _, f := range s.Fields() {
-		log.Println(f, f.Tag("default"))
+	for _, _ = range s.Fields() {
+		// apply defaults here
+		// log.Println(f, f.Tag("default"))
+	}
+	return nil
+}
+
+func Build(outputter Outputter) error {
+	prereqs := TaskDeps(outputter)
+
+	for _, o := range TopoSort(prereqs) {
+		log.Printf("%# v - %# v - %v", o, o.Output(), o.Output().Exists())
+		if !o.Output().Exists() {
+			log.Printf("Running %# v...", o)
+			if rr, ok := o.(Runner); ok {
+				// TODO(miku): apply defaults to rr here
+				if err := rr.Run(); err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("cannot create missing task output for: %# v", o)
+			}
+		}
 	}
 	return nil
 }

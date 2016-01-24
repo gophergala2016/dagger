@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/gophergala2016/dagger"
-	"github.com/kr/pretty"
 )
 
 // BogusData creates some bogus data.
@@ -20,7 +19,7 @@ type BogusData struct {
 
 // Run creates the data.
 func (task BogusData) Run() error {
-	file, err := task.output().Create()
+	file, err := dagger.Output(task).CreateLocalTarget()
 	if err != nil {
 		return err
 	}
@@ -39,14 +38,9 @@ func (task BogusData) Run() error {
 	return nil
 }
 
-// output points to a file.
-func (task BogusData) output() dagger.LocalTarget {
-	return dagger.LocalTarget{Path: dagger.AutoPathExt(task, "tsv")}
-}
-
 // Output fulfills the Outputter interface.
 func (task BogusData) Output() dagger.Target {
-	return task.output()
+	return dagger.LocalTarget{Path: dagger.AutoPathExt(task, "tsv")}
 }
 
 // BogusAggregation
@@ -75,7 +69,7 @@ func (task BogusAggregation) Run() error {
 		}
 		sum += v
 	}
-	file, err := task.output().Create()
+	file, err := dagger.Output(task).CreateLocalTarget()
 	if err != nil {
 		return err
 	}
@@ -84,14 +78,9 @@ func (task BogusAggregation) Run() error {
 	return err
 }
 
-// output points to a file.
-func (task BogusAggregation) output() dagger.LocalTarget {
-	return dagger.LocalTarget{Path: dagger.AutoPathExt(task, "tsv")}
-}
-
 // Output fulfills the Outputter interface.
 func (task BogusAggregation) Output() dagger.Target {
-	return task.output()
+	return dagger.LocalTarget{Path: dagger.AutoPathExt(task, "tsv")}
 }
 
 type Dummy struct{}
@@ -112,47 +101,8 @@ func (task Dummy) Output() dagger.Target {
 }
 
 func main() {
-	// task := BogusAggregation{Col: 2}
 	task := Dummy{}
-
-	prereqs := dagger.TaskDeps(task)
-	log.Printf("%# v", pretty.Formatter(prereqs))
-	for i, o := range dagger.TopoSort(prereqs) {
-		log.Printf("%d: %# v - %# v - %v", i, o, o.Output(), o.Output().Exists())
-		if !o.Output().Exists() {
-			log.Printf("running %# v...", o)
-			if rr, ok := o.(dagger.Runner); ok {
-				if err := dagger.InitializeRunner(&rr); err != nil {
-					log.Fatal(err)
-				}
-				if err := rr.Run(); err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				log.Fatal("cannot create missing task output for: %# v", o)
-			}
-		}
+	if err := dagger.Build(task); err != nil {
+		log.Fatal(err)
 	}
-	// for _, v := range task.Requires() {
-	// 	output := v.Output()
-	// 	if !output.Exists() {
-	// 		switch tt := v.(type) {
-	// 		case dagger.Runner:
-	// 			if err := tt.Run(); err != nil {
-	// 				log.Fatal(err)
-	// 			}
-	// 		default:
-	// 			log.Fatal("output does not exists and there is nothing to run")
-	// 		}
-	// 	} else {
-	// 		log.Printf("dependency is done")
-	// 	}
-	// }
-
-	// if !task.Output().Exists() {
-	// 	if err := task.Run(); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
-	// log.Println("all done")
 }

@@ -3,12 +3,11 @@ package dagger
 import (
 	"bufio"
 	"fmt"
-	"io"
-	"log"
 	"path"
 	"sort"
 	"strings"
 
+	"github.com/facebookgo/atomicfile"
 	"github.com/fatih/structs"
 )
 
@@ -38,6 +37,29 @@ type Requirer interface {
 // and should provide many helper methods.
 type TaskMap map[string]Outputter
 
+// outputHelper provides shortcuts for accessing outputs
+type outputHelper struct {
+	o Outputter
+}
+
+func Output(o Outputter) outputHelper {
+	return outputHelper{o: o}
+}
+
+func (o outputHelper) LocalTarget() LocalTarget {
+	if output, ok := o.o.Output().(LocalTarget); ok {
+		return output
+	}
+	panic("output is not a LocalTarget")
+}
+
+func (o outputHelper) CreateLocalTarget() (*atomicfile.File, error) {
+	if output, ok := o.o.Output().(LocalTarget); ok {
+		return output.Create()
+	}
+	panic("output is not a LocalTarget")
+}
+
 // inputDispatcher provides shortcuts to let a task access its requirements.
 type inputDispatcher struct {
 	r Requirer
@@ -60,37 +82,6 @@ func (d inputDispatcher) Scanner() (*bufio.Scanner, error) {
 		}
 	}
 	return nil, nil
-}
-
-func (d inputDispatcher) ReadLines() (<-chan string, error) {
-	ch := make(chan string)
-	for _, v := range d.r.Requires() {
-		output := v.Output()
-		switch o := output.(type) {
-		case LocalTarget:
-			file, err := o.Open()
-			if err != nil {
-				return nil, err
-			}
-			go func() {
-				reader := bufio.NewReader(file)
-				for {
-					line, err := reader.ReadString('\n')
-					if err == io.EOF {
-						break
-					}
-					if err != nil {
-						log.Fatal(err)
-					}
-					ch <- strings.TrimSpace(line)
-				}
-				close(ch)
-			}()
-		default:
-			close(ch)
-		}
-	}
-	return ch, nil
 }
 
 // AutoPath returns a path based on the task name and parameters.
